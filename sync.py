@@ -65,6 +65,22 @@ def main():
         page.goto(SOURCE, wait_until="domcontentloaded", timeout=60000)
         page.wait_for_timeout(5000)
         html = page.content()
+        # The public register can be embedded in a separate frame.
+        frames = page.frames
+        print("eMOL FRAMES: count=", len(frames), flush=True)
+        for idx, frame in enumerate(frames):
+            print("eMOL FRAME URL:", idx, repr(frame.url[:350]), flush=True)
+            try:
+                frame_html = frame.content()
+                soup = BeautifulSoup(frame_html, "html.parser")
+                print("eMOL FRAME STRUCTURE:", idx, "tables=", len(soup.select("table")), "rows=", len(soup.select("tr")), "links=", len(soup.select("a[href]")), flush=True)
+                print("eMOL FRAME TEXT:", idx, repr(soup.get_text(" ", strip=True)[:450]), flush=True)
+                if idx > 0 and soup.select("table tbody tr"):
+                    html = frame_html
+                    print("eMOL: Using verified table from frame", idx, flush=True)
+                    break
+            except Exception as exc:
+                print("eMOL FRAME READ ERROR:", idx, type(exc).__name__, str(exc)[:180], flush=True)
         browser.close()
     items = parse(html)
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
