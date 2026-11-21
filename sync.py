@@ -13,7 +13,18 @@ NUMBER = re.compile(r"(?:Nr\.?\s*)?(\d{1,5})\s*/\s*(\d{1,2}[./-]\d{1,2}[./-]20\d
 
 def parse(html):
     soup = BeautifulSoup(html, "html.parser")
+    # Diagnostics for public registry markup; no credentials or personal data logged.
     rows = soup.select("table tbody tr")
+    if not rows:
+        print("eMOL DIAGNOSTIC: title=", soup.title.get_text(" ", strip=True)[:160] if soup.title else "(none)", flush=True)
+        print("eMOL DIAGNOSTIC: tables=", len(soup.select("table")), "rows=", len(soup.select("tr")), "iframes=", len(soup.select("iframe")), flush=True)
+        print("eMOL DIAGNOSTIC: links=", len(soup.select("a[href]")), flush=True)
+        for a in soup.select("a[href]")[:12]:
+            print("eMOL LINK:", repr(a.get_text(" ", strip=True)[:90]), repr(a.get("href", "")[:180]), flush=True)
+        for frame in soup.select("iframe[src]")[:5]:
+            print("eMOL FRAME:", repr(frame.get("src", "")[:220]), flush=True)
+        print("eMOL DIAGNOSTIC: body preview=", repr(soup.body.get_text(" ", strip=True)[:900]) if soup.body else "(none)", flush=True)
+
     if not rows:
         raise RuntimeError("Nu există rânduri de registru în HTML-ul public; necesită adaptarea selectorilor")
     items = []
